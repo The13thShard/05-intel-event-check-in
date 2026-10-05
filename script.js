@@ -5,11 +5,123 @@ const teamSelect = document.getElementById("teamSelect");
 const attendeeCount = document.getElementById("attendeeCount");
 const progressBar = document.getElementById("progressBar");
 const greeting = document.getElementById("greeting");
+const teamIds = ["water", "zero", "power"];
+const storageKey = "intelEventCheckInProgress";
+const teamAttendees = {
+  water: [],
+  zero: [],
+  power: []
+};
 
 // Attendance elements
 let count = 0;
 const maxCount = 50;
 let confettiShown = false;
+
+function updateProgressDisplay() {
+  const percentage = Math.min(Math.round((count / maxCount) * 100), 100) + "%";
+  attendeeCount.textContent = count;
+  progressBar.style.width = percentage;
+}
+
+function loadProgress() {
+  let savedProgress;
+
+  try {
+    savedProgress = localStorage.getItem(storageKey);
+  } catch (error) {
+    console.error("Unable to load saved check-in progress.", error);
+    return;
+  }
+
+  if (savedProgress === null) {
+    return;
+  }
+
+  let progress;
+
+  try {
+    progress = JSON.parse(savedProgress);
+  } catch (error) {
+    console.error("Saved check-in progress is not valid JSON.", error);
+    return;
+  }
+
+  if (
+    !progress ||
+    !Number.isSafeInteger(progress.count) ||
+    progress.count < 0 ||
+    !progress.teamCounts
+  ) {
+    console.error("Saved check-in progress has an invalid format.");
+    return;
+  }
+
+  for (let i = 0; i < teamIds.length; i++) {
+    const teamId = teamIds[i];
+    const teamCount = progress.teamCounts[teamId];
+    const attendees = progress.teamAttendees
+      ? progress.teamAttendees[teamId]
+      : [];
+
+    if (
+      !Number.isSafeInteger(teamCount) ||
+      teamCount < 0 ||
+      !Array.isArray(attendees) ||
+      !attendees.every(function (name) {
+        return typeof name === "string";
+      })
+    ) {
+      console.error(`Saved check-in count for ${teamId} is invalid.`);
+      return;
+    }
+  }
+
+  count = progress.count;
+  for (let i = 0; i < teamIds.length; i++) {
+    const teamId = teamIds[i];
+    const teamCounter = document.getElementById(teamId + "Count");
+    teamCounter.textContent = progress.teamCounts[teamId];
+    teamAttendees[teamId] = progress.teamAttendees
+      ? progress.teamAttendees[teamId]
+      : [];
+    renderTeamAttendees(teamId);
+  }
+
+  confettiShown = count >= maxCount;
+  updateProgressDisplay();
+}
+
+function renderTeamAttendees(teamId) {
+  const attendeeList = document.getElementById(teamId + "Attendees");
+  attendeeList.textContent = "";
+
+  for (let i = 0; i < teamAttendees[teamId].length; i++) {
+    const attendee = document.createElement("li");
+    attendee.textContent = teamAttendees[teamId][i];
+    attendeeList.appendChild(attendee);
+  }
+}
+
+function saveProgress() {
+  const teamCounts = {};
+
+  for (let i = 0; i < teamIds.length; i++) {
+    const teamId = teamIds[i];
+    const teamCounter = document.getElementById(teamId + "Count");
+    teamCounts[teamId] = Number(teamCounter.textContent);
+  }
+
+  try {
+    localStorage.setItem(storageKey, JSON.stringify({
+      count: count,
+      teamCounts: teamCounts,
+      teamAttendees: teamAttendees
+    }));
+  } catch (error) {
+    console.error("Unable to save check-in progress.", error);
+  }
+}
 
 function showConfetti() {
   const canvas = document.createElement("canvas");
@@ -76,13 +188,12 @@ form.addEventListener("submit", function (event) {
   console.log(name, teamName);
 
   // Count incrementor
-  count++
+  count++;
   console.log("Total check-ins: ", count);
 
   // Update progress bar
-  const percentage = Math.min(Math.round((count / maxCount) * 100), 100) + "%";
-  attendeeCount.textContent = count;
-  progressBar.style.width = percentage;
+  updateProgressDisplay();
+  const percentage = progressBar.style.width;
   console.log("Progress: ", `${percentage}`);
 
   if (count >= maxCount && !confettiShown) {
@@ -98,9 +209,14 @@ form.addEventListener("submit", function (event) {
 
   const newTotal = current + 1;
   console.log("New team count: ", newTotal);
+  teamAttendees[team].push(name);
+  renderTeamAttendees(team);
+  saveProgress();
   
   greeting.textContent = `Welcome ${name} from ${teamName}! You are attendee number ${count}.`;
   greeting.classList.add("success-message");
   greeting.style.display = "block";
   form.reset();
 });
+
+loadProgress();

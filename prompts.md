@@ -26,6 +26,10 @@ Clear all fields in the form so it's ready for the next attendee.
 
 Update the text inside a span to show the current attendee count.
 
+## Save attendance progress between page refreshes
+
+Use localStorage to save the total and team check-in counts, then restore them when the page loads.
+
 ## Update the width of a progress bar using a percentage
 
 Change the width of a progress bar based on the calculated progress.
@@ -33,6 +37,10 @@ Change the width of a progress bar based on the calculated progress.
 ## Update the correct team’s count on the page
 
 Use a selected team value to find the matching team element and update its count.
+
+## Show attendee names below each team
+
+Add each checked-in attendee's name to a vertical list under their selected team, and restore the lists from localStorage.
 
 ## Show a success message with someone's name and team
 

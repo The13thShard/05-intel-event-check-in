@@ -348,6 +348,21 @@ select {
   color: #475569;
 }
 
+.team-attendees {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding-left: 20px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.team-attendees li {
+  color: #475569;
+  font-size: 14px;
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .hero {
